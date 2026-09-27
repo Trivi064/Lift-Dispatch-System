@@ -40,6 +40,7 @@ class LiftDispatcher
 {
 private:
     vector<Lift> lifts;
+    bool isheadingtowardscaller(const Lift &l, int callerfloor);
     int distancecost(const Lift &l, int callerfloor);
     costresult directioncost(const Lift &l, int callerfloor, int callerdirection);
     costresult interruptioncost(const Lift &l);
@@ -49,6 +50,10 @@ public:
     LiftDispatcher(vector<Lift> initiallifts);
     Dispatchresult dispatch(int callerfloor, int callerdirection);
 };
+bool LiftDispatcher::isheadingtowardscaller(const Lift &l, int callerfloor)
+{
+    return (l.direction == 1 && l.currentfloor <= callerfloor) || (l.direction == -1 && l.currentfloor >= callerfloor);
+}
 LiftDispatcher::LiftDispatcher(vector<Lift> initiallifts) : lifts(initiallifts) {}
 int LiftDispatcher::distancecost(const Lift &l, int callerfloor)
 {
@@ -58,10 +63,8 @@ costresult LiftDispatcher::directioncost(const Lift &l, int callerfloor, int cal
 {
     if (!l.ismoving)
         return {0, "Idle lift"}; // static lift
-    bool movingtowardscaller =
-        (l.direction == 1 && l.currentfloor <= callerfloor) || (l.direction == -1 && l.currentfloor >= callerfloor);
-    // checks if the lift is below and going up then true and vice a versa
-    if (l.direction == callerdirection && movingtowardscaller)
+
+    if (l.direction == callerdirection && isheadingtowardscaller(l, callerfloor))
     {
         return {-2, "Already moving towards caller and same direction - Bonus"};
     }
@@ -78,7 +81,7 @@ costresult LiftDispatcher::interruptioncost(const Lift &l)
 costresult LiftDispatcher::abruptstop(const Lift &l, int callerfloor)
 {
     int gap = abs(l.currentfloor - callerfloor);
-    if (l.ismoving && gap < 2)
+    if (l.ismoving && gap < 2 && isheadingtowardscaller(l, callerfloor))
     {
         return {8, "Too close to stop smoothly - Penalty"};
     }
